@@ -20,12 +20,10 @@
 }
 
 .cp-container :focus {
-	border:none; 
+	border:none;
 	outline:0;
 }
 
-.cp-buffer-1,
-.cp-buffer-2,
 .cp-progress-1,
 .cp-progress-2 {
 	position: absolute;
@@ -40,40 +38,32 @@
 	border-radius:52px;
 }
 
-.cp-buffer-1,
-.cp-buffer-2 {
-	background: url("buffer.png") 0 0 no-repeat;
-}     
-
-
 /* FALLBACK for .progress
  * (24 steps starting from 1hr filled progress, Decrease second value by 104px for next step)
  * (It needs the container selector to work. Or use div)
- */ 
+ */
 
 .cp-container .cp-fallback {
 	background: url("progress_sprite.jpg") no-repeat;
-	background-position: 0 104px; 
+	background-position: 0 104px;
 }
 
 .cp-progress-1,
 .cp-progress-2 {
 	background: url("progress.png") 0 0 no-repeat;
-} 
+}
 
-.cp-buffer-holder,
 .cp-progress-holder,
 .cp-circle-control {
 	position:absolute;
 	width:104px;
 	height:104px;
-} 
+}
 
 .cp-circle-control {
 	cursor:pointer;
 }
 
-.cp-buffer-holder,
 .cp-progress-holder {
 	clip:rect(0px,104px,104px,52px);
 	display:none;
@@ -82,11 +72,10 @@
 
 /* This is needed when progress is greater than 50% or for fallback */
 
-.cp-buffer-holder.cp-gt50,
 .cp-progress-holder.cp-gt50,
 .cp-progress.cp-fallback{
 	clip:rect(auto, auto, auto, auto);
-}  
+}
 
 .cp-controls {
 	margin:0;
@@ -97,7 +86,7 @@
 	list-style-type:none;
 	display: block;
 
-	/*IE Fix*/  
+	/*IE Fix*/
 	position:absolute;
 }
 
@@ -107,7 +96,7 @@
 	width:50px;
 	height:50px;
 	text-indent:-9999px;
-	z-index:1;      
+	z-index:1;
 }
 
 .cp-controls .cp-play {
@@ -128,5 +117,5 @@
 
 .cp-jplayer {
 	width: 0;
-	height: 0; 
+	height: 0;
 }

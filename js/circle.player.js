@@ -33,6 +33,7 @@ var CirclePlayer = function(jPlayerSelector, media, options) {
 	var	self = this,
 
 		defaults = {
+			volume: 0.6,
 			// solution: "flash, html", // For testing Flash with CSS3
 			supplied: "m4a, oga",
 			// Android 2.3 corrupts media element if preload:"none" is used.
@@ -45,9 +46,6 @@ var CirclePlayer = function(jPlayerSelector, media, options) {
 		},
 
 		cssSelector = {
-			bufferHolder: ".cp-buffer-holder",
-			buffer1: ".cp-buffer-1",
-			buffer2: ".cp-buffer-2",
 			progressHolder: ".cp-progress-holder",
 			progress1: ".cp-progress-1",
 			progress2: ".cp-progress-2",
@@ -68,7 +66,6 @@ var CirclePlayer = function(jPlayerSelector, media, options) {
 
 	this.cssTransforms = Modernizr.csstransforms;
 	this.audio = {};
-	this.dragging = false; // Indicates if the progressbar is being 'dragged'.
 
 	this.eventNamespace = ".CirclePlayer"; // So the events can easily be removed in destroy.
 
@@ -88,90 +85,47 @@ CirclePlayer.prototype = {
 		var self = this;
 		this.player.jPlayer(this.options);
 
+		this.player.bind($.jPlayer.event.volumechange + this.eventNamespace, function(event) {
+			self._volumeupdate(event.jPlayer.options.volume * 100);
+		});
+
 		this.player.bind($.jPlayer.event.ready + this.eventNamespace, function(event) {
 			if(event.jPlayer.html.used && event.jPlayer.html.audio.available) {
 				self.audio = $(this).data("jPlayer").htmlElement.audio;
 			}
 			$(this).jPlayer("setMedia", self.media);
 			self._initCircleControl();
+
+			/* trigger */
+			self.player.jPlayer('volume', self.options.volume);
 		});
 
 		this.player.bind($.jPlayer.event.play + this.eventNamespace, function(event) {
 			$(this).jPlayer("pauseOthers");
 		});
-
-		// This event fired as play time increments
-		this.player.bind($.jPlayer.event.timeupdate + this.eventNamespace, function(event) {
-			if (!self.dragging) {
-				self._timeupdate(event.jPlayer.status.currentPercentAbsolute);
-			}
-		});
-
-		// This event fired as buffered time increments
-		this.player.bind($.jPlayer.event.progress + this.eventNamespace, function(event) {
-			var percent = 0;
-			if((typeof self.audio.buffered === "object") && (self.audio.buffered.length > 0)) {
-				if(self.audio.duration > 0) {
-					var bufferTime = 0;
-					for(var i = 0; i < self.audio.buffered.length; i++) {
-						bufferTime += self.audio.buffered.end(i) - self.audio.buffered.start(i);
-						// console.log(i + " | start = " + self.audio.buffered.start(i) + " | end = " + self.audio.buffered.end(i) + " | bufferTime = " + bufferTime + " | duration = " + self.audio.duration);
-					}
-					percent = 100 * bufferTime / self.audio.duration;
-				} // else the Metadata has not been read yet.
-				// console.log("percent = " + percent);
-			} else { // Fallback if buffered not supported
-				// percent = event.jPlayer.status.seekPercent;
-				percent = 0; // Cleans up the inital conditions on all browsers, since seekPercent defaults to 100 when object is undefined.
-			}
-			self._progress(percent); // Problem here at initial condition. Due to the Opera clause above of buffered.length > 0 above... Removing it means Opera's white buffer ring never shows like with polyfill.
-			// Firefox 4 does not always give the final progress event when buffered = 100%
-		});
-
-		this.player.bind($.jPlayer.event.ended + this.eventNamespace, function(event) {
-			self._resetSolution();
-		});
 	},
 	_initSolution: function() {
 		if (this.cssTransforms) {
-			this.jq.progressHolder.show();
-			this.jq.bufferHolder.show();
-		}
-		else {
-			this.jq.progressHolder.addClass(this.cssClass.gt50).show();
-			this.jq.progress1.addClass(this.cssClass.fallback);
-			this.jq.progress2.hide();
-			this.jq.bufferHolder.hide();
-		}
-		this._resetSolution();
-	},
-	_resetSolution: function() {
-		if (this.cssTransforms) {
-			this.jq.progressHolder.removeClass(this.cssClass.gt50);
+			this.jq.progressHolder.show().removeClass(this.cssClass.gt50);
 			this.jq.progress1.css({'transform': 'rotate(0deg)'});
 			this.jq.progress2.css({'transform': 'rotate(0deg)'}).hide();
 		}
 		else {
-			this.jq.progress1.css('background-position', '0 ' + this.spritePitch + 'px');
+			this.jq.progressHolder.addClass(this.cssClass.gt50).show();
+			this.jq.progress1.addClass(this.cssClass.fallback).progress1.css('background-position', '0 ' + this.spritePitch + 'px');
+			this.jq.progress2.hide();
 		}
 	},
 	_initCircleControl: function() {
 		var self = this;
 		this.jq.circleControl.grab({
-			onstart: function(){
-				self.dragging = true;
-			}, onmove: function(event){
+			onmove: function(event){
 				var pc = self._getArcPercent(event.position.x, event.position.y);
-				self.player.jPlayer("playHead", pc).jPlayer("play");
-				self._timeupdate(pc);
-			}, onfinish: function(event){
-				self.dragging = false;
-				var pc = self._getArcPercent(event.position.x, event.position.y);
-				self.player.jPlayer("playHead", pc).jPlayer("play");
+				self.player.jPlayer('volume', Math.round(pc) / 100);
 			}
 		});
 	},
-	_timeupdate: function(percent) {
+	_volumeupdate: function(percent) {
 		var degs = percent * 3.6+"deg";
 
 		var spriteOffset = (Math.floor((Math.round(percent))*this.spriteRatio)-1)*-this.spritePitch;
@@ -192,22 +146,6 @@ CirclePlayer.prototype = {
 				this.jq.progress2.show();
 			} else { // fall back
 				this.jq.progress1.css('background-position', '0 '+spriteOffset+'px');
-			}
-		}
-	},
-	_progress: function(percent) {
-		var degs = percent * 3.6+"deg";
-
-		if (this.cssTransforms) {
-			if (percent <= 50) {
-				this.jq.bufferHolder.removeClass(this.cssClass.gt50);
-				this.jq.buffer1.css({'transform': 'rotate(' + degs + ')'});
-				this.jq.buffer2.hide();
-			} else if (percent <= 100) {
-				this.jq.bufferHolder.addClass(this.cssClass.gt50);
-				this.jq.buffer1.css({'transform': 'rotate(180deg)'});
-				this.jq.buffer2.show();
-				this.jq.buffer2.css({'transform': 'rotate(' + degs + ')'});
 			}
 		}
 	},
