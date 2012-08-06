@@ -96,6 +96,11 @@ CirclePlayer.prototype = {
 			$(this).jPlayer("setMedia", self.media);
 			self._initCircleControl();
 
+			/*
+			 * Mac Firefox 16.0a2 (2012-08-05) won't update volume position to 0.6's without being
+			 * modified first. It seems that 0.6 is the default volume value of firefox.
+			 */
+			self.player.jPlayer('volume', 0.1);
 			/* trigger */
 			self.player.jPlayer('volume', self.options.volume);
 		});
